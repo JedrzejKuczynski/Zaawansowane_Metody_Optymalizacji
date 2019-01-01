@@ -36,11 +36,9 @@ class Job{
 		~Job() {}
 };
 
-// OGARNAC CZY NA BANK WSZYSTKO CO POTRZEBA TU JEST!!!
 class Solution {
 	public:
-		unsigned int parent_id; // id "rodzica" - potrzebne dla uszeregowania na pierwszej maszynie - zero w przypadku braku
-		unsigned int solution_id;
+		unsigned long long solution_id;
 		vector<unsigned int> job_ids; // wektor przechowujacy liczby porzadkowe zadan obecnych w rozwiazaniu
 		vector<Job> seq_mach1; // sekwencja operacji na pierwszej maszynie
 		vector<Job> seq_mach2; // sekwencja operacji na drugiej maszynie
@@ -51,11 +49,7 @@ class Solution {
 
 		Solution() {}
 
-		Solution(unsigned int parent, unsigned int sol_id, vector<unsigned int> job_id, vector<Job> seq1, vector<Job> seq2) {
-			if (parent != 0)
-				parent_id = parent;
-			else
-				parent_id = 0;
+		Solution(unsigned long sol_id, vector<unsigned int> job_id, vector<Job> seq1, vector<Job> seq2) {
 			solution_id = sol_id;
 			job_ids = job_id;
 			sort(job_ids.begin(), job_ids.end());
@@ -67,7 +61,6 @@ class Solution {
 
 		~Solution() {}
 };
-// OGARNAC CZY NA BANK WSZYSTKO CO POTRZEBA TU JEST!!!
 
 
 tuple<vector<Job>, unsigned int, unsigned int> read_from_file(string filename) {
@@ -159,7 +152,7 @@ void generator(string filename, unsigned int jobs, unsigned int op1_max_duration
 }
 
 
-void initialize_stack(stack<Solution> &solutions, vector<Job> jobs, unsigned int &sol_id) {
+void initialize_stack(stack<Solution> &solutions, vector<Job> jobs, unsigned long long &sol_id) {
 
 	/* Funkcja zapelnia stos poczatkowymi mozliwymi rozwiazaniami:
 	   na obu maszynach po jednej operacji nalezacej do tego samego zadania
@@ -173,9 +166,82 @@ void initialize_stack(stack<Solution> &solutions, vector<Job> jobs, unsigned int
 		vector<unsigned int> job_id;
 		sequence.push_back(jobs[i]);
 		job_id.push_back(jobs[i].job_id);
-		Solution solution(0, sol_id, job_id, sequence, sequence);
+		Solution solution(sol_id, job_id, sequence, sequence);
 		solutions.push(solution);
 		sol_id++;
+	}
+}
+
+
+unsigned int schedule_and_evaluate(Solution &schedule, unsigned int jobs) {
+
+	if (schedule.mach1.size() != jobs && schedule.mach2.size() != jobs) { // jezeli nie mamy do czynienia z pelnym, uszeregowanym rozwiazaniem
+
+		unsigned int ready_time_op1 = 0; // zmienna przechowujaca aktualny koniec uszeregowania na pierwszej maszynie
+		vector<pair<unsigned int, unsigned int>> ready_times_op2; // wektor przechowujacy mozliwie najwczesniejsze momenty rozpoczecia drugich operacji
+
+		// Szeregowanie pierwszych operacji na pierwszej maszynie
+
+		for (unsigned int i = 0; i < schedule.seq_mach1.size(); i++) { // dla kazdego zadania w sekwencji
+			Job current_job = schedule.seq_mach1[i]; // pobierz to zadanie
+			auto assignment = make_tuple(current_job.job_id, ready_time_op1, ready_time_op1 + current_job.operation1);
+			schedule.mach1.push_back(assignment); // przypisz je na pierwsza maszyne
+			ready_time_op1 += current_job.operation1; // zaktualizuj dlugosc uszeregowania
+			auto ready_time_op2 = make_pair(current_job.job_id, ready_time_op1);
+			ready_times_op2.push_back(ready_time_op2); // przechowaj mozliwy moment rozpoczecia drugiej operacji
+		}
+
+		// Szeregowanie drugich operacji na drugiej maszynie (NA RAZIE BEZ DZIUR)
+
+		unsigned int mach2_end = 0; // zmienna przechowujaca dlugosc uszeregowania na drugiej maszynie
+
+		for (unsigned int i = 0; i < schedule.seq_mach2.size(); i++) { // dla kazdego zadanie w sekwencji
+			Job current_job = schedule.seq_mach2[i]; // pobierz to zadanie
+			unsigned int ready_time_op2; // zmienna przechowujaca czas gotowsci drugiej operacji
+
+			for (unsigned int j = 0; j < ready_times_op2.size(); j++) // znajdz czas gotowsci drugiej operacji aktualnego zadania
+				if (ready_times_op2[j].first == current_job.job_id)
+					ready_time_op2 = ready_times_op2[j].second;
+
+			if (i == 0) { // jezeli szeregujesz pierwsza operacje na maszynine
+				auto assignment = make_tuple(current_job.job_id, ready_time_op2, ready_time_op2 + current_job.operation2);
+				schedule.mach2.push_back(assignment); // to wstaw ja po prostu w odpowiednim miejscu
+				mach2_end = ready_time_op2 + current_job.operation2; // zaktualizuj dlugosc uszeregowania
+			}
+			else { // w przeciwnym przypadku
+				if (ready_time_op2 > mach2_end) { // jezeli zadanie nie moze sie rozpoczac bezposrednio po poprzednim; powstaje okres bezczynnosci
+					auto assignment = make_tuple(current_job.job_id, ready_time_op2, ready_time_op2 + current_job.operation2);
+					schedule.mach2.push_back(assignment); // przypisz je w odpowiednim miejscu
+					mach2_end = ready_time_op2 + current_job.operation2; // odpowiednio zaktualizuj dlugosc uszeregowania
+				}
+				else { // w przeciwnym przypadku
+					auto assignment = make_tuple(current_job.job_id, mach2_end, mach2_end + current_job.operation2);
+					schedule.mach2.push_back(assignment); // przypisz zaraz za poprzednim zadaniem
+					mach2_end += current_job.operation2;
+				}
+			}
+		}
+
+		// TUTAJ WSTAWIANIE PRZERW
+
+		// TUTAJ WSTAWIANIE PRZERW
+
+		// Liczenie wartosci funkcji
+
+		unsigned int value = 0;
+
+		for (unsigned int i = 0; i < schedule.mach2.size(); i++)
+			value += get<2>(schedule.mach2[i]);
+
+		return value;
+	}
+	else { // w przeciwnym przypadku oblicz tylko wartosc funkcji celu
+		unsigned int value = 0;
+
+		for (unsigned int i = 0; i < schedule.mach2.size(); i++)
+			value += get<2>(schedule.mach2[i]);
+
+		return value;
 	}
 }
 
@@ -192,7 +258,7 @@ int main()
 
 	unsigned int tau = get<1>(test); // parametr tau
 	unsigned int tau_duration = get<2>(test); // czas trwania dziury
-	unsigned int solution_id = 1; // zmienna przechowujaca aktualna liczbe porzadkowa rozwiazania
+	unsigned long long solution_id = 1; // zmienna przechowujaca aktualna liczbe porzadkowa rozwiazania
 
 	stack<Solution> solutions; // stos przechowujacy przestrzen rozwiazan
 	initialize_stack(solutions, jobs, solution_id); // zapelnienie stosu pierwszymi rozwiazaniami
@@ -200,14 +266,17 @@ int main()
 	unsigned int upper_bound = numeric_limits<unsigned int>::max(); // poczatkowy upper bound rowna sie nieskonczonosci
 	Solution best_solution; // najlepsze rozwiazanie
 
-	// PROCEDURA BRANCH AND BOUND !!!(BEZ EWALUACJI ROZWIAZANIA)!!!
+	// PROCEDURA BRANCH AND BOUND !!!(BEZ EWALUACJI ROZWIAZANIA)!!! CZYLI W SUMIE SAM BRANCH
 
 	while (!solutions.empty()) { // dopoki stos nie jest pusty: dopoki istnieje mozliwosc znalezienia lepszego rozwiazania
 		Solution current_solution = solutions.top(); // pobierz rozwiazanie ze stosu
 		solutions.pop(); // i je usun
-		if (current_solution.seq_mach1.size() == jobs.size() && current_solution.cost < upper_bound) { // jesli uszeregowane sa wszystkie zadania oraz jest ono lepsze od aktualnego
-			best_solution = current_solution; // zapisz je jako najlepsze
-			upper_bound = best_solution.cost; // uaktualnij wartosc upper bound
+		if (current_solution.seq_mach1.size() == jobs.size()) { // jesli uszeregowane sa wszystkie zadania
+			current_solution.cost = schedule_and_evaluate(current_solution, jobs.size()); // oblicz wartosc funkcji celu
+			if (current_solution.cost < upper_bound) { // i rozwiazanie jest lepsze od poprzedniego
+				best_solution = current_solution; // zapisz je jako najlepsze
+				upper_bound = best_solution.cost; // uaktualnij wartosc upper bound
+			}
 		}
 		else { // w przeciwnym przypadku
 			vector<unsigned int> diff; // wektor przechowujacy brakujace zadania w obslugiwanym rozwiazaniu
@@ -223,18 +292,30 @@ int main()
 					vector<Job> new_seq_mach2 = current_solution.seq_mach2; // utworz wektor przechowujacy te permutacje
 					Job inserted = jobs[diff[i] - 1]; // wybierz odpowiednie zadanie do wstawienia
 					new_seq_mach2.insert(new_seq_mach2.begin() + j, inserted); // wstaw w odpowiednim miejscu
-					Solution new_solution(current_solution.solution_id, solution_id, new_job_ids, new_seq_mach1, new_seq_mach2); // utworz nowe rozwiazanie
+					Solution new_solution(solution_id, new_job_ids, new_seq_mach1, new_seq_mach2); // utworz nowe rozwiazanie
 					solution_id++;
-					//IF LOWER BOUND > UPPER BOUND continue // I albo je odrzuc
-					//else ZROB TO
-					solutions.push(new_solution); // albo umiesc na stosie
+					new_solution.cost = schedule_and_evaluate(new_solution, jobs.size());
+					if (new_solution.cost > upper_bound)
+						continue;
+					else
+						solutions.push(new_solution); // albo umiesc na stosie
 				}
 			}
 		}
 
 	}
 
-	cout << solution_id << endl << endl;
+	cout <<  "Solution ID: " << best_solution.solution_id << endl;
+	cout << "Wartosc funkcji: " << best_solution.cost << endl << endl << "Sekwencja na 1 maszynie: " << endl << endl;;
+	for (unsigned int i = 0; i < best_solution.seq_mach1.size(); i++) {
+		cout << "Zadanie: " << get<0>(best_solution.mach1[i]) << " Start: " << get<1>(best_solution.mach1[i]) << " Koniec: " << get<2>(best_solution.mach1[i]) << endl;
+	}
+	cout << endl << endl << "Sekwencja na 2 maszynie: " << endl;
+	for (unsigned int i = 0; i < best_solution.seq_mach2.size(); i++) {
+		cout << "Zadanie: " << get<0>(best_solution.mach2[i]) << " Start: " << get<1>(best_solution.mach2[i]) << " Koniec: " << get<2>(best_solution.mach2[i]) << endl;
+	}
+
+	cout << endl << endl << solution_id << endl << endl;
 	return 0;
 }
 
