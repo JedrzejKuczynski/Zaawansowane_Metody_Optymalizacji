@@ -175,7 +175,7 @@ void initialize_stack(stack<Solution> &solutions, vector<Job> jobs, unsigned lon
 
 unsigned int schedule_and_evaluate(Solution &schedule, unsigned int jobs) {
 
-	if (schedule.mach1.size() != jobs && schedule.mach2.size() != jobs) { // jezeli nie mamy do czynienia z pelnym, uszeregowanym rozwiazaniem
+	if (schedule.mach1.size() != jobs) { // jezeli nie mamy do czynienia z pelnym, uszeregowanym rozwiazaniem
 
 		unsigned int ready_time_op1 = 0; // zmienna przechowujaca aktualny koniec uszeregowania na pierwszej maszynie
 		vector<pair<unsigned int, unsigned int>> ready_times_op2; // wektor przechowujacy mozliwie najwczesniejsze momenty rozpoczecia drugich operacji
