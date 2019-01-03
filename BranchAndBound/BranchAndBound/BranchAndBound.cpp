@@ -43,7 +43,7 @@ class Solution {
 		vector<Job> seq_mach1; // sekwencja operacji na pierwszej maszynie
 		vector<Job> seq_mach2; // sekwencja operacji na drugiej maszynie
 		vector<tuple<unsigned int, unsigned int, unsigned int>> mach1; // uszeregowanie na pierwszej maszynie: <job_id, start, end>
-		vector<tuple<int, unsigned int, unsigned int>> mach2; // uszeregowanie na drugiej maszynie: <?job_id (+) lub hole_id (-)?, start, end>
+		vector<tuple<unsigned int, unsigned int, unsigned int>> mach2; // uszeregowanie na drugiej maszynie: <job_id, start, end>
 		vector<tuple<unsigned int, unsigned int, unsigned int>> holes; // wektor przechowujacy dziury na drugiej maszynie: hole_id, start, end
 		unsigned int cost; // wartosc naszej funkcji celu
 
@@ -173,9 +173,9 @@ void initialize_stack(stack<Solution> &solutions, vector<Job> jobs, unsigned lon
 }
 
 
-unsigned int schedule_and_evaluate(Solution &schedule, unsigned int jobs) {
+unsigned int schedule_and_evaluate(Solution &schedule, unsigned int n_jobs, unsigned int tau, unsigned int tau_duration) {
 
-	if (schedule.mach1.size() != jobs) { // jezeli nie mamy do czynienia z pelnym, uszeregowanym rozwiazaniem
+	if (schedule.mach1.size() != n_jobs) { // jezeli nie mamy do czynienia z pelnym, uszeregowanym rozwiazaniem
 
 		unsigned int ready_time_op1 = 0; // zmienna przechowujaca aktualny koniec uszeregowania na pierwszej maszynie
 		vector<pair<unsigned int, unsigned int>> ready_times_op2; // wektor przechowujacy mozliwie najwczesniejsze momenty rozpoczecia drugich operacji
@@ -222,9 +222,34 @@ unsigned int schedule_and_evaluate(Solution &schedule, unsigned int jobs) {
 			}
 		}
 
-		// TUTAJ WSTAWIANIE PRZERW
 
-		// TUTAJ WSTAWIANIE PRZERW
+		// Wstawianie przerw
+
+		mach2_end = get<2>(schedule.mach2.back());
+		unsigned int n_holes = mach2_end / tau; // ustalenie ile dziur bedzie potrzebnych (na wyrost)
+		unsigned int start = tau; // poczatek pierwszej dziury
+
+		for (unsigned int i = 0; i < n_holes; i++) { // utworzenie dziur oddzielonych od siebie o dlugosc tau
+			auto new_hole = make_tuple(i + 1, start, start + tau_duration);
+			schedule.holes.push_back(new_hole);
+			start = start + tau_duration + tau;
+		}
+
+		for (unsigned int i = 0; i < schedule.mach2.size(); i++) { // dla kazdego zadania
+			for (unsigned int j = 0; j < schedule.holes.size(); j++) { // i dla kazdej dziury
+				if (!(get<2>(schedule.mach2[i]) <= get<1>(schedule.holes[j]) || (get<1>(schedule.mach2[i]) >= get<2>(schedule.holes[j])))) { // jezeli nachodza na siebie
+					unsigned int diff = get<2>(schedule.holes[j]) - get<1>(schedule.mach2[i]); // oblicz o ile trzeba przesunac w prawo
+					for (unsigned int k = i; k < schedule.mach2.size(); k++) { // przesun kazde zadanie na prawo o te wartosc
+						get<1>(schedule.mach2[k]) += diff;
+						get<2>(schedule.mach2[k]) += diff;
+					}
+				}
+			}
+		}
+
+		// TU DOKLEJANIE DO LEWA
+
+		// TU DOKLEJANIE DO LEWA
 
 		// Liczenie wartosci funkcji
 
@@ -272,7 +297,7 @@ int main()
 		Solution current_solution = solutions.top(); // pobierz rozwiazanie ze stosu
 		solutions.pop(); // i je usun
 		if (current_solution.seq_mach1.size() == jobs.size()) { // jesli uszeregowane sa wszystkie zadania
-			current_solution.cost = schedule_and_evaluate(current_solution, jobs.size()); // oblicz wartosc funkcji celu
+			current_solution.cost = schedule_and_evaluate(current_solution, jobs.size(), tau, tau_duration); // oblicz wartosc funkcji celu
 			if (current_solution.cost < upper_bound) { // i rozwiazanie jest lepsze od poprzedniego
 				best_solution = current_solution; // zapisz je jako najlepsze
 				upper_bound = best_solution.cost; // uaktualnij wartosc upper bound
@@ -294,7 +319,7 @@ int main()
 					new_seq_mach2.insert(new_seq_mach2.begin() + j, inserted); // wstaw w odpowiednim miejscu
 					Solution new_solution(solution_id, new_job_ids, new_seq_mach1, new_seq_mach2); // utworz nowe rozwiazanie
 					solution_id++;
-					new_solution.cost = schedule_and_evaluate(new_solution, jobs.size());
+					new_solution.cost = schedule_and_evaluate(new_solution, jobs.size(), tau, tau_duration);
 					if (new_solution.cost > upper_bound)
 						continue;
 					else
@@ -308,11 +333,16 @@ int main()
 	cout <<  "Solution ID: " << best_solution.solution_id << endl;
 	cout << "Wartosc funkcji: " << best_solution.cost << endl << endl << "Sekwencja na 1 maszynie: " << endl << endl;;
 	for (unsigned int i = 0; i < best_solution.seq_mach1.size(); i++) {
-		cout << "Zadanie: " << get<0>(best_solution.mach1[i]) << " Start: " << get<1>(best_solution.mach1[i]) << " Koniec: " << get<2>(best_solution.mach1[i]) << endl;
+		cout << "Zadanie " << get<0>(best_solution.mach1[i]) << " Start: " << get<1>(best_solution.mach1[i]) << " Koniec: " << get<2>(best_solution.mach1[i]) << endl;
 	}
 	cout << endl << endl << "Sekwencja na 2 maszynie: " << endl;
 	for (unsigned int i = 0; i < best_solution.seq_mach2.size(); i++) {
-		cout << "Zadanie: " << get<0>(best_solution.mach2[i]) << " Start: " << get<1>(best_solution.mach2[i]) << " Koniec: " << get<2>(best_solution.mach2[i]) << endl;
+		cout << "Zadanie " << get<0>(best_solution.mach2[i]) << " Start: " << get<1>(best_solution.mach2[i]) << " Koniec: " << get<2>(best_solution.mach2[i]) << endl;
+	}
+
+	cout << endl << endl << "Dziury na 2 maszynie: " << endl;
+	for (unsigned int i = 0; i < best_solution.holes.size(); i++) {
+		cout << "Dziura " << get<0>(best_solution.holes[i]) << " Start: " << get<1>(best_solution.holes[i]) << " Koniec: " << get<2>(best_solution.holes[i]) << endl;
 	}
 
 	cout << endl << endl << solution_id << endl << endl;
