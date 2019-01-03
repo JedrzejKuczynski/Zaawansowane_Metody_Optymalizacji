@@ -1,5 +1,5 @@
 ﻿  BranchAndBound.cpp
 c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(169): warning C4244: "argument": konwersja z "unsigned __int64" do "unsigned long", możliwa utrata danych
-c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(368): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
-c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(413): warning C4244: "argument": konwersja z "unsigned __int64" do "unsigned long", możliwa utrata danych
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(375): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(420): warning C4244: "argument": konwersja z "unsigned __int64" do "unsigned long", możliwa utrata danych
   BranchAndBound.vcxproj -> C:\Users\Jędrzej\Desktop\Studium_Naturae\Zaawansowane_Metody_Optymalizacji\BranchAndBound\Debug\BranchAndBound.exe
