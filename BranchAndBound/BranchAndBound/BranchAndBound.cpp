@@ -183,6 +183,7 @@ unsigned int schedule_and_evaluate(Solution &schedule, unsigned int n_jobs, unsi
 
 		unsigned int ready_time_op1 = 0; // zmienna przechowujaca aktualny koniec uszeregowania na pierwszej maszynie
 		vector<pair<unsigned int, unsigned int>> ready_times_op2; // wektor przechowujacy mozliwie najwczesniejsze momenty rozpoczecia drugich operacji
+		unsigned int loop_times = 0;
 
 		// Szeregowanie pierwszych operacji na pierwszej maszynie
 
@@ -288,8 +289,10 @@ unsigned int schedule_and_evaluate(Solution &schedule, unsigned int n_jobs, unsi
 					unsigned int ready_time; // zmienna przechowujaca jego "potencjalny" czas gotowosci
 
 					for (unsigned int j = 0; j < ready_times_op2.size(); j++) // znajdz ten czas
-						if (ready_times_op2[j].first == get<0>(schedule.mach2[i]))
+						if (ready_times_op2[j].first == get<0>(schedule.mach2[i])) {
 							ready_time = ready_times_op2[j].second;
+							break;
+						}
 
 					if (get<1>(schedule.mach2[i]) > ready_time) { // jezeli operacja zaczyna sie pozniej niz jej "potencjalny" czas gotowosci
 						unsigned int diff = get<1>(schedule.mach2[i]) - ready_time; // oblicz o ile by trzeba ja przesunac
@@ -316,6 +319,11 @@ unsigned int schedule_and_evaluate(Solution &schedule, unsigned int n_jobs, unsi
 				}
 			}
 
+			for (unsigned int i = 0; i < schedule.mach2.size() - 1; i++) {
+				if (get<0>(schedule.mach2[i]) < 0 && get<0>(schedule.mach2[i + 1]) < 0)
+					loop_times++;
+			}
+
 			// Sprowadzenie 2 maszyny do samych operacji
 
 			vector<tuple<int, unsigned int, unsigned int>> mach2;
@@ -339,6 +347,88 @@ unsigned int schedule_and_evaluate(Solution &schedule, unsigned int n_jobs, unsi
 			// Naprawa odleglosci pomiedzy dziurami (o ile jakies zostaly)
 
 			if (schedule.holes.size() > 0) {
+				for (unsigned int i = 0; i < schedule.holes.size() - 1; i++) {
+					unsigned int diff = get<1>(schedule.holes[i + 1]) - get<2>(schedule.holes[i]);
+					if (diff > tau) {
+						unsigned int correction = diff - tau;
+						get<1>(schedule.holes[i + 1]) -= correction;
+						get<2>(schedule.holes[i + 1]) -= correction;
+					}
+				}
+			}
+
+			for (unsigned int p = 0; p < loop_times; p++) {
+
+				vector<tuple<int, unsigned int, unsigned int>> mach2_holes = schedule.mach2; // utworz nowy wektor przechowujacy dodatkowo dziury
+				vector<bool> done_holes; // wektor pomocniczy sprawdzajacy, ktore dziury juz zostaly obsluzone
+				for (unsigned int i = 0; i < schedule.holes.size(); i++)
+					done_holes.push_back(false);
+
+				for (unsigned int i = 0; i < schedule.mach2.size(); i++) { // dla kazdego zadania na 2 maszynie
+					for (unsigned int j = 0; j < schedule.holes.size(); j++) { // dla kazdej dziury
+						if (done_holes[j] != true) { // jezeli nie zostala obsluzona
+							if ((get<1>(schedule.holes[j]) < get<1>(schedule.mach2[i])) && (get<2>(schedule.holes[j]) <= get<1>(schedule.mach2[i]))) { // i jezeli powinna byc przed obslugiwanym zadaniem
+								int hole_id = get<0>(schedule.holes[j]);
+								hole_id = -hole_id;
+								auto new_hole = make_tuple(hole_id, get<1>(schedule.holes[j]), get<2>(schedule.holes[j]));
+								mach2_holes.insert(mach2_holes.begin() + j, new_hole); // to ja wstaw z ujemnym indeksem
+								done_holes[j] = true; // dziura obsluzona
+							}
+						}
+					}
+				}
+
+				schedule.mach2 = mach2_holes;
+				sort(schedule.mach2.begin(), schedule.mach2.end(), compare_mach2); // posortuj 2 maszyne pod wzgledem czasow rozpoczec
+
+				// Usuwanie przerw - "doklejanie do lewa"
+
+				for (unsigned int i = 0; i < schedule.mach2.size(); i++) { // dla kazdego tworu na maszynie (dziury czy operacji)
+					if (get<0>(schedule.mach2[i]) > 0) { // jezeli jest to operacja
+						unsigned int ready_time; // zmienna przechowujaca jego "potencjalny" czas gotowosci
+
+						for (unsigned int j = 0; j < ready_times_op2.size(); j++) // znajdz ten czas
+							if (ready_times_op2[j].first == get<0>(schedule.mach2[i])) {
+								ready_time = ready_times_op2[j].second;
+								break;
+							}
+
+						if (get<1>(schedule.mach2[i]) > ready_time) { // jezeli operacja zaczyna sie pozniej niz jej "potencjalny" czas gotowosci
+							unsigned int diff = get<1>(schedule.mach2[i]) - ready_time; // oblicz o ile by trzeba ja przesunac
+							if (get<0>(schedule.mach2[i - 1]) < 0) { // jezeli poprzedni twor to dziura (tylko w przypadku dziur mozliwe sa przerwy)
+								unsigned int space; // zmienna przechowujaca dostepne miejsce
+								if (i - 1 == 0) { // jezeli jest to pierwszy twor na maszynie
+									space = get<1>(schedule.mach2[i - 1]); // to dostepne miejsce to czas rozpoczecia tej dziury
+								}
+								else {
+									space = get<1>(schedule.mach2[i - 1]) - get<2>(schedule.mach2[i - 2]); // lub odpowiednia roznica dwoch poprzednich tworow
+								}
+								unsigned int correction = min(diff, space); // mozliwa korekta jest minimum z diff i space
+								if (correction > 0) {
+									get<1>(schedule.mach2[i - 1]) -= correction;
+									get<2>(schedule.mach2[i - 1]) -= correction; // wprowadzamy korekte dla dziury
+									int id = abs(get<0>(schedule.mach2[i - 1]));
+									get<1>(schedule.holes[id - 1]) = get<1>(schedule.mach2[i - 1]); // wprowadzamy korekte na wektorze przechowujacym dziury
+									get<2>(schedule.holes[id - 1]) = get<2>(schedule.mach2[i - 1]); // wprowadzamy korekte na wektorze przechowujacym dziury
+									get<1>(schedule.mach2[i]) -= correction;
+									get<2>(schedule.mach2[i]) -= correction; // wprowadzamy korekte do samej operacji "podlaczanej" do tej dziury
+								}
+							}
+						}
+					}
+				}
+
+				// Sprowadzenie 2 maszyny do samych operacji
+
+				vector<tuple<int, unsigned int, unsigned int>> mach2;
+
+				for (unsigned int i = 0; i < schedule.mach2.size(); i++) {
+					if (get<0>(schedule.mach2[i]) > 0) {
+						mach2.push_back(schedule.mach2[i]);
+					}
+				}
+				schedule.mach2 = mach2;
+
 				for (unsigned int i = 0; i < schedule.holes.size() - 1; i++) {
 					unsigned int diff = get<1>(schedule.holes[i + 1]) - get<2>(schedule.holes[i]);
 					if (diff > tau) {
@@ -494,6 +584,7 @@ int main()
 
 		//cout << time << " sekund" << endl << endl;
 		//display_solution(best_solution);
+		cout << in_filename << " " << time << endl;
 		//cout << endl << endl;
 	}
 
