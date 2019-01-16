@@ -1,3 +1,17 @@
 ﻿  BranchAndBound.cpp
-c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(506): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(561): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(575): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(583): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(595): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(619): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(620): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(635): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(641): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(643): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(669): warning C4244: "argument": konwersja z "time_t" do "unsigned int", możliwa utrata danych
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(807): warning C4244: "inicjowanie": konwersja z "float" do "int", możliwa utrata danych
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(861): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(862): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(869): warning C4018: "<": niezgodność typu ze znakiem/bez znaku
+c:\users\jędrzej\desktop\studium_naturae\zaawansowane_metody_optymalizacji\branchandbound\branchandbound\branchandbound.cpp(856): warning C4101: "competitor_ind": lokalna zmienna, do której nie istnieje odwołanie
   BranchAndBound.vcxproj -> C:\Users\Jędrzej\Desktop\Studium_Naturae\Zaawansowane_Metody_Optymalizacji\BranchAndBound\Debug\BranchAndBound.exe
